@@ -70,7 +70,6 @@ int InitShell( void )
 {
 	// プレイヤー1
 	Shell_1.bActive = false;
-
 	return 0;
 }
 
@@ -83,6 +82,9 @@ int MoveShell( void )
 	
 	if ( Shell_1.bActive ) {
 		//Shell_1の各値を設定してください
+		Shell_1.v3Pos.x *= Player_1.fTheta; // = Player_1.fPhi;
+		Shell_1.v3Pos.z; // = Player_1.fPhi;
+		Shell_1.v3Pos.y = Player_1.fTheta;
 	}
 
 	return 0;
@@ -315,7 +317,7 @@ int MakeCylinderIndexed( float fHeight, float r,
 
 // リンクライブラリ
 #pragma comment( lib, "d3d11.lib" )   // D3D11ライブラリ
-#pragma comment( lib, "d3dx11.lib" )
+#pragma comment( lib, "d3dcompiler.lib" )   // D3D11ライブラリ
 #pragma comment( lib, "winmm.lib" )
 
 
@@ -1042,7 +1044,7 @@ HRESULT Render( void )
 	if ( Shell_1.bActive ) {
 		g_mmShell.mMatrix.r[3].m128_f32[0] = Shell_1.v3Pos.x;
 		g_mmShell.mMatrix.r[3].m128_f32[1] = Shell_1.v3Pos.y;
-		g_mmShell.mMatrix.r[3].m128_f322] = Shell_1.v3Pos.z;
+		g_mmShell.mMatrix.r[3].m128_f32[2] = Shell_1.v3Pos.z;
 		DrawMyModel( &g_mmShell, &mViewProjection );
 		DrawShadowModel( &g_mmShell, &mViewProjection, XMFLOAT3( -1.0f, -1.0f, -1.0f ), GROUND_Y );
 	}

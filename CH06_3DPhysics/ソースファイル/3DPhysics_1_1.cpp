@@ -47,9 +47,16 @@ XMMATRIX CreateShadowMatrix( XMFLOAT3 v3Light, float fGround_y )
 {
 	XMMATRIX			matShadowed;
 
-	matShadowed = XMMatrixIdentity();			// 単位行列に
+
+	matShadowed = XMMatrixIdentity();	// 単位行列に
 
 	//影を落とすように行列の各値を設定してください。
+	matShadowed.r[0].m128_f32[0] = 1;
+	matShadowed.r[3].m128_f32[0] *= v3Light.x;
+	matShadowed.r[1].m128_f32[1] = fGround_y;
+	matShadowed.r[3].m128_f32[1] = 0.01;
+	matShadowed.r[2].m128_f32[2] *= v3Light.z*v3Light.y;
+	matShadowed.r[3].m128_f32[2] = 0;//v3Light.z;
 
 	return matShadowed;							// 結果
 }
@@ -846,7 +853,7 @@ LRESULT WINAPI MsgProc( HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam )
 // レンダリング
 HRESULT Render( void )
 {
-//	int						i;
+//	int	i;
 
     // 画面クリア
 	XMFLOAT4	v4Color = XMFLOAT4( 0.0f, 0.5f, 1.0f, 1.0f );
@@ -904,7 +911,7 @@ HRESULT Render( void )
     g_pImmediateContext->RSSetState( g_pRS );						// カリングなし
 	g_mmGunbarrel.mMatrix = XMMatrixRotationZ( -Player_1.fTheta ) *
 							XMMatrixRotationY( Player_1.fPhi );
-	g_mmGunbarrel.mMatrix._42 = TURRET_R / 2.0f;
+	g_mmGunbarrel.mMatrix.r[3].m128_f32[1] = TURRET_R / 2.0f;
 	DrawMyModel( &g_mmGunbarrel, &mViewProjection );
 	DrawShadowModel( &g_mmGunbarrel, &mViewProjection, XMFLOAT3( -1.0f, -1.0f, -2.0f ), GROUND_Y );
     g_pImmediateContext->RSSetState( g_pRS_Cull_CW );				// カリングあり
@@ -914,7 +921,7 @@ HRESULT Render( void )
 	float v4Factors[4] = { 0.4f, 0.4f, 0.4f, 1.0f };
     g_pImmediateContext->OMSetBlendState( g_pbsAlphaBlend, v4Factors, 0xFFFFFFFF );
 	matTemp = g_mmGround.mMatrix;
-	g_mmGround.mMatrix._42 += 0.02f;
+	g_mmGround.mMatrix.r[3].m128_f32[1] += 0.02f;
 	DrawMyModel( &g_mmGround, &mViewProjection );
 	g_mmGround.mMatrix = matTemp;
 	

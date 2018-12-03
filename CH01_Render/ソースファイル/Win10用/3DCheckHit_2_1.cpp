@@ -16,7 +16,7 @@
 
 #define PI							3.1415927f			// ‰~Žü—¦
 #define ROT_SPEED					( PI / 100.0f )		// ‰ñ“]‘¬“x
-#define CORNER_NUM					40// Šp”
+#define CORNER_NUM					20// Šp”
 #define PLAYER_SPEED				0.08f				// ƒvƒŒƒCƒ„[‚ÌˆÚ“®‘¬“x
 #define CHECK_TRIANGLE_NUM			3				// “–‚½‚è”»’èŽOŠpŒ`‚Ì”
 #define GROUND_SIZE					20.0f				// °‚ÌƒTƒCƒY
@@ -84,7 +84,6 @@ int CheckHit( XMFLOAT3 *pv3Triangle, XMFLOAT3 *pv3Point )
 	bHit = FALSE;
 	if (fCross0 * fCross1 >= 0 && fCross0 * fCross2 >= 0)
 	{
-		
 		bHit = TRUE;
 	}
 	if ( fCross0 >= 0.0f ) {

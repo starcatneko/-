@@ -20,7 +20,10 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\..\..\DirectXTex-master\WICTextureLoader\WICTextureLoader.cpp" />
-    <ClCompile Include="..\3DCheckHit_2_1.cpp" />
+    <ClCompile Include="..\..\..\..\CH06_3DPhysics\ソースファイル\3DPhysics_2_1.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="memo.txt" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{11E540A9-45FC-44E9-B3B5-249B821B049F}</ProjectGuid>

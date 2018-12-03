@@ -1,5 +1,4 @@
-﻿  3DCheckHit_2_1.cpp
-c:\users\1601291\desktop\数学サンプル\ch01_render\ソースファイル\win10用\3dcheckhit_2_1.cpp(983): warning C4305: '+=': 'double' から 'float' へ切り詰めます。
-c:\users\1601291\desktop\数学サンプル\ch01_render\ソースファイル\win10用\3dcheckhit_2_1.cpp(952): warning C4101: 'cbNeverChanges': ローカル変数は 1 度も使われていません。
-c:\users\1601291\desktop\数学サンプル\ch01_render\ソースファイル\win10用\3dcheckhit_2_1.cpp(953): warning C4101: 'mWorld': ローカル変数は 1 度も使われていません。
+﻿  3DPhysics_2_1.cpp
+c:\users\1601291\desktop\数学サンプル\ch06_3dphysics\ソースファイル\3dphysics_2_1.cpp(1006): warning C4101: 'cbNeverChanges': ローカル変数は 1 度も使われていません。
+c:\users\1601291\desktop\数学サンプル\ch06_3dphysics\ソースファイル\3dphysics_2_1.cpp(1007): warning C4101: 'mWorld': ローカル変数は 1 度も使われていません。
   Math.vcxproj -> C:\Users\1601291\Desktop\数学サンプル\CH01_Render\ソースファイル\Win10用\x64\Debug\Math.exe
