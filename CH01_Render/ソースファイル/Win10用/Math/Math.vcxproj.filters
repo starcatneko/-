@@ -18,7 +18,7 @@
     <ClCompile Include="..\..\..\..\..\DirectXTex-master\WICTextureLoader\WICTextureLoader.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\CH06_3DPhysics\ソースファイル\3DPhysics_2_1.cpp">
+    <ClCompile Include="..\..\..\..\CH06_3DPhysics\ソースファイル\3DPhysics_3_1.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
   </ItemGroup>

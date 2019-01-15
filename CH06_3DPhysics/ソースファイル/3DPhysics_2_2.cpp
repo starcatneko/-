@@ -44,9 +44,9 @@ struct MY_PLAYER {
 
 // 砲弾構造体
 struct MY_SHELL {
-	int				bActive;							// 有効フラグ
-	XMFLOAT3		v3Pos;								// 位置
-	XMFLOAT3		v3Vel;								// 速度
+	int				bActive;							// 位置
+	XMFLOAT3		v3Vel;								// 有効フラグ
+	XMFLOAT3		v3Pos;								// 速度
 };
 
 
@@ -62,8 +62,8 @@ float GetBarrelAngle( float fDistance, float fVel_0 )
 {
 	float			fSin;
 	//ここに射角の計算を行うコードを書いてください
-	
-	return 0;
+	fSin = fDistance / fVel_0;
+	return fSin;
 }
 
 
@@ -80,7 +80,6 @@ int InitShell( void )									// 砲弾の初期化
 {
 	// プレイヤー1
 	Shell_1.bActive = false;
-
 	return 0;
 }
 
@@ -90,6 +89,13 @@ int MoveShell( void )									// 砲弾の移動
 	if ( Shell_1.bActive ) {
 		
 		//ここに１フレームごとの挙動を書いてください。
+
+		Shell_1.v3Pos.x += Shell_1.v3Vel.x;
+		Shell_1.v3Pos.y += Shell_1.v3Vel.y;
+		Shell_1.v3Pos.z += Shell_1.v3Vel.z;
+
+		Shell_1.v3Vel.y -= GR;
+
 		if ( ( Shell_1.v3Pos.y < SHELL_RADIUS ) && ( Shell_1.v3Vel.y < 0.0f ) ) {
 			Shell_1.bActive = false;
 			InitTatget();
@@ -135,12 +141,12 @@ XMMATRIX CreateShadowMatrix( XMFLOAT3 v3Light, float fGround_y )	// 影行列の生成
 	XMMATRIX			matShadowed;
 
 	matShadowed = XMMatrixIdentity();			// 単位行列に
-	matShadowed._41 = v3Light.x / v3Light.y * fGround_y;
-	matShadowed._42 = fGround_y + 0.01f;			// 地面から浮くよう微調整
-	matShadowed._43 = v3Light.z / v3Light.y * fGround_y;
-	matShadowed._21 = -v3Light.x / v3Light.y;
-	matShadowed._22 = 0.0f;
-	matShadowed._23 = -v3Light.z / v3Light.y;
+	matShadowed.r[3].m128_f32[0] = v3Light.x / v3Light.y * fGround_y;
+	matShadowed.r[3].m128_f32[1] = fGround_y + 0.01f;			// 地面から浮くよう微調整
+	matShadowed.r[3].m128_f32[2] = v3Light.z / v3Light.y * fGround_y;
+	matShadowed.r[1].m128_f32[0] = -v3Light.x / v3Light.y;
+	matShadowed.r[1].m128_f32[1] = 0.0f;
+	matShadowed.r[1].m128_f32[2] = -v3Light.z / v3Light.y;
 
 	return matShadowed;							// 結果
 }

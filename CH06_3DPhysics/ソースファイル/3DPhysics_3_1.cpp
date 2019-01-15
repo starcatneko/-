@@ -31,7 +31,7 @@
 #define G_SPHERE_Z_POS				5.0f				// 地面球Z位置
 
 
-using namespace DirectX
+using namespace DirectX;
 
 // 頂点構造体
 struct CUSTOMVERTEX {
@@ -155,16 +155,25 @@ int MovePlayer( void )
 		Player_1.v3Vel.z = -Player_1.v3Vel.z;
 	}
 
-	Player_1.v3Pos.y = CheckGroundHeight( &Player_1 );	// プレイヤー高さセット
-
+	v3Up = Player_1.v3Normal;
+	v3Side = XMFLOAT3(v3Up.z, 0.0f, -v3Up.x);
+	v3Drop = Cross(&v3Side, &v3Up);
+	Player_1.v3Vel.x += GR * v3Drop.x;
+	Player_1.v3Vel.y += GR * v3Drop.y;
+	Player_1.v3Vel.z += GR * v3Drop.z;
 	// 加速度計算コードを書いてください(P285を参考に)
-
-	
+	//Player_1.v3Vel.x = GR * (Player_1.v3Vel.x*GR);
+	//Player_1.v3Vel.y = GR * (-Player_1.v3Vel.y*GR);
+	//Player_1.v3Vel.z = GR * (-Player_1.v3Vel.y*GR);
+	//v3Up;
 	// 速度直交化補正を書いてください(P295を参考に)
-	
-	
+	v3Up = Player_1.v3Normal;
+	v3Vel = Player_1.v3Vel;
+	v3Side = Cross(&v3Vel, &v3Up);
+	v3Vel = Cross(&v3Up, &v3Side);
+	v3Vel = Normalize(&v3Vel);
 	// 運動エネルギー補正
-	fNowKineticE = 0;;
+	fNowKineticE = 0;
 	if ( fNowKineticE > 0.0f ) {				// 通常のエネルギー計算
 		//通常のエネルギー計算から速度ベクトルを計算
 	}

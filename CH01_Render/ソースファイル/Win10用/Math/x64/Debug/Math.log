@@ -1,4 +1,9 @@
-﻿  3DPhysics_2_1.cpp
-c:\users\1601291\desktop\数学サンプル\ch06_3dphysics\ソースファイル\3dphysics_2_1.cpp(1006): warning C4101: 'cbNeverChanges': ローカル変数は 1 度も使われていません。
-c:\users\1601291\desktop\数学サンプル\ch06_3dphysics\ソースファイル\3dphysics_2_1.cpp(1007): warning C4101: 'mWorld': ローカル変数は 1 度も使われていません。
+﻿  3DPhysics_3_1.cpp
+c:\users\1601291\desktop\数学サンプル\ch06_3dphysics\ソースファイル\3dphysics_3_1.cpp(120): warning C4101: 'fNowVel': ローカル変数は 1 度も使われていません。
+c:\users\1601291\desktop\数学サンプル\ch06_3dphysics\ソースファイル\3dphysics_3_1.cpp(305): warning C4101: 'v3PreForward': ローカル変数は 1 度も使われていません。
+c:\users\1601291\desktop\数学サンプル\ch06_3dphysics\ソースファイル\3dphysics_3_1.cpp(304): warning C4101: 'matScaleTrans': ローカル変数は 1 度も使われていません。
+c:\users\1601291\desktop\数学サンプル\ch06_3dphysics\ソースファイル\3dphysics_3_1.cpp(302): warning C4101: 'matRot_Y': ローカル変数は 1 度も使われていません。
+c:\users\1601291\desktop\数学サンプル\ch06_3dphysics\ソースファイル\3dphysics_3_1.cpp(303): warning C4101: 'matRot_X': ローカル変数は 1 度も使われていません。
+c:\users\1601291\desktop\数学サンプル\ch06_3dphysics\ソースファイル\3dphysics_3_1.cpp(1119): warning C4101: 'cbNeverChanges': ローカル変数は 1 度も使われていません。
+c:\users\1601291\desktop\数学サンプル\ch06_3dphysics\ソースファイル\3dphysics_3_1.cpp(1120): warning C4101: 'mWorld': ローカル変数は 1 度も使われていません。
   Math.vcxproj -> C:\Users\1601291\Desktop\数学サンプル\CH01_Render\ソースファイル\Win10用\x64\Debug\Math.exe

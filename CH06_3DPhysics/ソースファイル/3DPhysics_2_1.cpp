@@ -69,7 +69,9 @@ int InitPlayer( void )
 int InitShell( void )
 {
 	// プレイヤー1
+	
 	Shell_1.bActive = false;
+	Shell_1.v3Vel.y = SHELL_FIRST_VEL;
 	return 0;
 }
 
@@ -82,9 +84,14 @@ int MoveShell( void )
 	
 	if ( Shell_1.bActive ) {
 		//Shell_1の各値を設定してください
-		Shell_1.v3Pos.x *= Player_1.fTheta; // = Player_1.fPhi;
-		Shell_1.v3Pos.z; // = Player_1.fPhi;
-		Shell_1.v3Pos.y = Player_1.fTheta;
+		Shell_1.v3Pos.x += Shell_1.v3Vel.x; // = Player_1.fPhi;
+		Shell_1.v3Pos.z += Shell_1.v3Vel.z; // = Player_1.fPhi;
+		Shell_1.v3Pos.y += Shell_1.v3Vel.y;
+		Shell_1.v3Vel.y -= GR;
+	}
+	if (Shell_1.v3Pos.y < 0)
+	{
+		InitShell();
 	}
 
 	return 0;

@@ -816,7 +816,7 @@ HRESULT InitGeometry( void )
 	g_nIndexNum += nIndexNum1;
 	g_mmGunbarrel.ptpTexture = &g_tTurretTexture;
 	g_mmGunbarrel.mMatrix = XMMatrixIdentity();
-	g_mmGunbarrel.mMatrix._42 = GUNBARREL_HEIGHT;
+	g_mmGunbarrel.mMatrix.r[3].m128_f32[1] = GUNBARREL_HEIGHT;
 	g_mmGunbarrel.v4AddColor = XMFLOAT4( 0.0f, 0.0f, 0.0f, 0.0f );
 	// –C’e
 //	int						nVertexNum1, nIndexNum1;
@@ -1031,24 +1031,24 @@ HRESULT Render( void )
     g_pImmediateContext->RSSetState( g_pRS );						// ƒJƒŠƒ“ƒO‚È‚µ
 	g_mmGunbarrel.mMatrix = XMMatrixRotationZ( -PI / 2.0f + Player_1.fTheta ) *
 							XMMatrixRotationY( Player_1.fPhi );
-	g_mmGunbarrel.mMatrix._42 = TURRET_R / 2.0f;
+	g_mmGunbarrel.mMatrix.r[3].m128_f32[1] = TURRET_R / 2.0f;
 	DrawMyModel( &g_mmGunbarrel, &mViewProjection );
 	DrawShadowModel( &g_mmGunbarrel, &mViewProjection, XMFLOAT3( -1.0f, -1.0f, -1.0f ), GROUND_Y );
     g_pImmediateContext->RSSetState( g_pRS_Cull_CW );				// ƒJƒŠƒ“ƒO‚ ‚è
 
 	// –C’e
 	if ( Shell_1.bActive ) {
-		g_mmShell.mMatrix._41 = Shell_1.v3Pos.x;
-		g_mmShell.mMatrix._42 = Shell_1.v3Pos.y;
-		g_mmShell.mMatrix._43 = Shell_1.v3Pos.z;
+		g_mmShell.mMatrix.r[3].m128_f32[0] = Shell_1.v3Pos.x;
+		g_mmShell.mMatrix.r[3].m128_f32[1] = Shell_1.v3Pos.y;
+		g_mmShell.mMatrix.r[3].m128_f32[2] = Shell_1.v3Pos.z;
 		DrawMyModel( &g_mmShell, &mViewProjection );
 		DrawShadowModel( &g_mmShell, &mViewProjection, XMFLOAT3( -1.0f, -1.0f, -1.0f ), GROUND_Y );
 	}
 
 	// ƒ^[ƒQƒbƒg
-	g_mmShell.mMatrix._41 = v3TargetPos.x;
-	g_mmShell.mMatrix._42 = v3TargetPos.y;
-	g_mmShell.mMatrix._43 = v3TargetPos.z;
+	g_mmShell.mMatrix.r[3].m128_f32[0] = v3TargetPos.x;
+	g_mmShell.mMatrix.r[3].m128_f32[1] = v3TargetPos.y;
+	g_mmShell.mMatrix.r[3].m128_f32[2] = v3TargetPos.z;
 	DrawMyModel( &g_mmShell, &mViewProjection );
 	DrawShadowModel( &g_mmShell, &mViewProjection, XMFLOAT3( -1.0f, -1.0f, -1.0f ), GROUND_Y );
 		
@@ -1057,7 +1057,7 @@ HRESULT Render( void )
 	float v4Factors[4] = { 0.4f, 0.4f, 0.4f, 1.0f };
     g_pImmediateContext->OMSetBlendState( g_pbsAlphaBlend, v4Factors, 0xFFFFFFFF );
 	matTemp = g_mmGround.mMatrix;
-	g_mmGround.mMatrix._42 += 0.02f;
+	g_mmGround.mMatrix.r[3].m128_f32[1] += 0.02f;
 	DrawMyModel( &g_mmGround, &mViewProjection );
 	g_mmGround.mMatrix = matTemp;
 	

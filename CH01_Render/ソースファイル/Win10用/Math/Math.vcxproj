@@ -20,7 +20,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\..\..\DirectXTex-master\WICTextureLoader\WICTextureLoader.cpp" />
-    <ClCompile Include="..\..\..\..\CH06_3DPhysics\ソースファイル\3DPhysics_2_1.cpp" />
+    <ClCompile Include="..\..\..\..\CH06_3DPhysics\ソースファイル\3DPhysics_3_1.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="memo.txt" />
