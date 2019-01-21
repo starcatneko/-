@@ -1,6 +1,6 @@
 //------------------------------------------------------------
-// 3DCheckHit_4_2.cpp
-// 傾いた平面との当たり判定
+// BillBoard_3_1.cpp
+// αブレンドによるビルボード(Zソートなし)
 // 
 //------------------------------------------------------------
 
@@ -15,10 +15,20 @@
 #define VIEW_HEIGHT					600					// 画面高さ
 
 #define PI							3.1415927f			// 円周率
+#define ROT_SPEED					( PI / 100.0f )		// 回転速度
 #define CORNER_NUM					20					// 角数
 #define PLAYER_SPEED				0.08f				// プレイヤーの移動速度
-#define GROUND_SIZE					6.0f				// 床のサイズ
+#define GROUND_BASE					0.0f				// 床の基底高さ
+#define GROUND_SIZE					20.0f				// 床のサイズ
+#define GROUND_DIVIDE_NUM			50					// 床分割数
+#define HILL_HEIGHT					2.0f				// 丘の高さ
+#define BLOCK_NUM				( GROUND_DIVIDE_NUM )	// 地形ブロック数
+#define BLOCK_WIDTH				( GROUND_SIZE / BLOCK_NUM )		// ブロックの幅
+#define BILLBOARD_SIZE				2.0f				// ビルボードの大きさ
+#define BILLBOARD_NUM				50					// ビルボードの数
+#define BILLBOARD_AREA				10.0f				// ビルボードの置かれる範囲
 
+using namespace DirectX;
 
 // 頂点構造体
 struct CUSTOMVERTEX {
@@ -26,201 +36,91 @@ struct CUSTOMVERTEX {
 	XMFLOAT2	v2UV;
 };
 
+// ビルボード構造体
+struct MY_BILLBOARD {
+	XMFLOAT3			v3Pos;					// 位置
+	float				fSortKey;				// ソートキー
+	float				fMarkBright;			// マーク色強さ
+};
 
+// プレイヤー構造体
 struct MY_PLAYER {
 	XMFLOAT3			v3Pos;					// 位置
 };
 
+MY_BILLBOARD	Billboards[BILLBOARD_NUM];		// ビルボードデータ
+MY_PLAYER		Player_1;						// プレイヤーデータ
 
-MY_PLAYER	Player_1;							// プレイヤーデータ
-
-
-// 高さデータ
-// 地形の四隅の標高を指定する
-// ただし、本当に地形の四隅の標高を指定してしまうと、
-// 一枚の平面が四隅を通れる保証がなくなるので(一度に平面が通れる点が一般に3点までのため)、
-// 最後のデータは無効でありプログラムによって標高が計算されている
-float			g_fHeights[4] = { 1.0f, 2.5f, 4.0f, 0.0f };
-
-// 地面の高さチェック
-float CheckGroundHeight( MY_PLAYER *pPlayer )
+//このソースコードでは、特にやることはないです。
+// ビルボード行列の生成
+XMMATRIX MakeBillboardMatrix( XMMATRIX *pmatView, XMFLOAT3 *pv3Pos )
 {
-	float		fPlayerBlock_x, fPlayerBlock_z;
-	float		fGrad_x, fGrad_z;					// 傾き
-	/*
-	fPlayerBlock_x = ( pPlayer->v3Pos.x + ( GROUND_SIZE / 2 ) ) / ( float )GROUND_SIZE;
-	fGrad_x = 0;//X方向の勾配を出す
-	fPlayerBlock_z = ( pPlayer->v3Pos.z + ( GROUND_SIZE / 2 ) ) / ( float )GROUND_SIZE;
-	fGrad_z = 0;//Z方向の勾配を出す
-	*/
-	return g_fHeights[0];//適切な高さを返す(XZ勾配からバイリニアする)
+	XMMATRIX		matBill;							// ビルボード行列
+
+	// 回転部分の転置行列作成
+	matBill._11 = pmatView->_11;  matBill._12 = pmatView->_21;  matBill._13 = pmatView->_31;  matBill._14 = 0.0f;
+	matBill._21 = pmatView->_12;  matBill._22 = pmatView->_22;  matBill._23 = pmatView->_32;  matBill._24 = 0.0f;
+	matBill._31 = pmatView->_13;  matBill._32 = pmatView->_23;  matBill._33 = pmatView->_33;  matBill._34 = 0.0f;
+	matBill._41 =     pv3Pos->x;  matBill._42 =     pv3Pos->y;  matBill._43 =     pv3Pos->z;  matBill._44 = 1.0f;
+
+	return matBill;
+}
+
+
+// 地面の高さ取得
+float GetGroundHeight( float x, float z )
+{
+	float			rsq;
+	float			fHeight;
+
+	rsq = x * x + z * z;
+	fHeight = HILL_HEIGHT * expf( -rsq / ( 2.0f * 3.0f ) );
+
+	return fHeight;
+}
+
+
+int InitBillboard( void )								// ビルボードの初期化
+{
+	int				i;
+	float			x, y, z;
+
+	for ( i = 0; i < BILLBOARD_NUM; i++ ) {
+		x = BILLBOARD_AREA * ( ( float )rand() / RAND_MAX - 0.5f );
+		z = BILLBOARD_AREA * ( ( float )rand() / RAND_MAX - 0.5f );
+		y = GetGroundHeight( x, z );
+		Billboards[i].v3Pos = XMFLOAT3( x, y, z );
+		Billboards[i].fSortKey = 0.0f;
+		Billboards[i].fMarkBright = ( float )rand() / RAND_MAX * 0.5f;
+	}
+
+	return 0;
 }
 
 
 int InitPlayer( void )									// プレイヤーの初期化
 {
 	// プレイヤー1
-	Player_1.v3Pos = XMFLOAT3( 0.0f, 0.0f, 0.0f );
+	Player_1.v3Pos = XMFLOAT3( 0.0f, 2.0f, 0.0f );
 
 	return 0;
 }
 
 
-int MovePlayer( void )									// 球の移動
+int MovePlayer( void )									// 視点の移動
 {
-	// 左
-	if ( GetAsyncKeyState( VK_LEFT ) ) {
-		Player_1.v3Pos.x -= PLAYER_SPEED;
-		if ( Player_1.v3Pos.x < -GROUND_SIZE / 2 )
-			Player_1.v3Pos.x = -GROUND_SIZE / 2;
-	}
-	// 右
-	if ( GetAsyncKeyState( VK_RIGHT ) ) {
-		Player_1.v3Pos.x += PLAYER_SPEED;
-		if ( Player_1.v3Pos.x > GROUND_SIZE / 2 )
-			Player_1.v3Pos.x = GROUND_SIZE / 2;
-	}
-	// 奥
+	float fEyeAngle;
+
+	fEyeAngle = 2.0f * PI / 8000.0f * ( timeGetTime() % 8000 );
+	Player_1.v3Pos.x = 7.0f * cosf( fEyeAngle );
+	Player_1.v3Pos.z = 7.0f * sinf( fEyeAngle );
 	if ( GetAsyncKeyState( VK_UP ) ) {
-		Player_1.v3Pos.z += PLAYER_SPEED;
-		if ( Player_1.v3Pos.z > GROUND_SIZE / 2 )
-			Player_1.v3Pos.z = GROUND_SIZE / 2;
+		Player_1.v3Pos.y += PLAYER_SPEED;
 	}
-	// 手前
+	// 下
 	if ( GetAsyncKeyState( VK_DOWN ) ) {
-		Player_1.v3Pos.z -= PLAYER_SPEED;
-		if ( Player_1.v3Pos.z < -GROUND_SIZE / 2 )
-			Player_1.v3Pos.z = -GROUND_SIZE / 2;
+		Player_1.v3Pos.y -= PLAYER_SPEED;
 	}
-
-	Player_1.v3Pos.y = CheckGroundHeight( &Player_1 );	// プレイヤー高さセット
-
-	return 0;
-}
-
-
-
-XMMATRIX CreateWorldMatrix( float x, float y, float z, float fSize )	// ワールド行列の生成
-{
-	float			fAngleY;							// y軸周り回転角
-	static float	fAngleX = 0.0f;						// x軸周り回転角
-	XMMATRIX		matRot_Y;							// y軸周り回転行列
-	XMMATRIX		matRot_X;							// x軸周り回転行列
-	XMMATRIX		matScaleTrans;						// 拡大縮小平行移動行列
-
-	// 強制回転
-	fAngleY = 2.0f * PI * ( float )( timeGetTime() % 3000 ) / 3000.0f;
-
-	// 行列作成
-	matRot_Y = XMMatrixRotationY( fAngleY );
-	matRot_X = XMMatrixRotationX( fAngleX );
-
-	matScaleTrans= XMMatrixIdentity();
-	matScaleTrans.r[0].m128_f32[0] = fSize;
-	matScaleTrans.r[1].m128_f32[1] = fSize;
-	matScaleTrans.r[2].m128_f32[2] = fSize;
-	matScaleTrans.r[3].m128_f32[0] = x;
-	matScaleTrans.r[3].m128_f32[1] = y;
-	matScaleTrans.r[3].m128_f32[2] = z;
-
-	return matRot_Y * matRot_X * matScaleTrans;		// 変換の合成
-}
-
-
-int MakeSphereIndexed( float x, float y, float z, float r,
-					   CUSTOMVERTEX *pVertices, int *pVertexNum,
-					   WORD *pIndices, int *pIndexNum,
-					   int nIndexOffset )			// 球の作成(中心位置とインデックス付き)
-{
-	int					i, j;
-	float				fTheta;
-	float				fPhi;
-	float				fAngleDelta;
-	int					nIndex;						// データのインデックス
-	int					nIndexY;					// x方向インデックス
-
-	// 頂点データ作成
-	fAngleDelta = 2.0f * PI / CORNER_NUM;
-	nIndex = 0;
-	fTheta = 0.0f;
-	for ( i = 0; i < CORNER_NUM / 2 + 1; i++ ) {
-		fPhi = 0.0f;
-		for ( j = 0; j < CORNER_NUM + 1; j++ ) {
-			pVertices[nIndex].v4Pos  = XMFLOAT4( x + r * sinf( fTheta ) * cosf( fPhi ),
-												 y + r * cosf( fTheta ),
-												 z + r * sinf( fTheta ) * sinf( fPhi ), 1.0f );
-			pVertices[nIndex].v2UV = XMFLOAT2( fPhi / ( 2.0f * PI ), fTheta / PI );
-			nIndex++;
-			fPhi += fAngleDelta;
-		}
-		fTheta += fAngleDelta;
-	}
-	*pVertexNum = nIndex;
-
-	// インデックスデータ作成
-	nIndex = 0;
-	for ( i = 0; i < CORNER_NUM; i++ ) {
-		for ( j = 0; j < CORNER_NUM / 2; j++ ) {
-			nIndexY = j * ( CORNER_NUM + 1 );
-			pIndices[nIndex    ] = nIndexOffset + nIndexY + i;
-			pIndices[nIndex + 1] = nIndexOffset + nIndexY + ( CORNER_NUM + 1 ) + i;
-			pIndices[nIndex + 2] = nIndexOffset + nIndexY + i + 1;
-			nIndex += 3;
-			pIndices[nIndex    ] = nIndexOffset + nIndexY + i + 1;
-			pIndices[nIndex + 1] = nIndexOffset + nIndexY + ( CORNER_NUM + 1 ) + i;
-			pIndices[nIndex + 2] = nIndexOffset + nIndexY + ( CORNER_NUM + 1 ) + i + 1;
-			nIndex += 3;
-		}
-	}
-	*pIndexNum = nIndex;
-
-	return 0;
-}
-
-
-int MakeConeIndexed( float fHeight, float r,
-					 CUSTOMVERTEX *pVertices, int *pVertexNum,
-					 WORD *pIndices, int *pIndexNum,
-					 int nIndexOffset )				// 円錐の作成(インデックス付き)
-{
-	int					i, j;
-	float				fTheta;
-	float				fAngleDelta;
-	int					nIndex;						// データのインデックス
-
-	// 頂点データ作成
-	fAngleDelta = 2.0f * PI / CORNER_NUM;
-	nIndex = 0;
-	pVertices[nIndex].v4Pos  = XMFLOAT4( 0.0f, 0.0f, 0.0f, 1.0f );
-	pVertices[nIndex].v2UV = XMFLOAT2( 0.5f, 1.0f );
-	nIndex++;
-	fTheta = 0.0f;
-	for ( j = 0; j < CORNER_NUM + 1; j++ ) {
-		pVertices[nIndex].v4Pos  = XMFLOAT4( r * cosf( fTheta ),
-											 fHeight,
-											 r * sinf( fTheta ), 1.0f );
-		pVertices[nIndex].v2UV = XMFLOAT2( fTheta / ( 2.0f * PI ), 0.5f );
-		nIndex++;
-		fTheta += fAngleDelta;
-	}
-	pVertices[nIndex].v4Pos  = XMFLOAT4( 0.0f, fHeight, 0.0f, 1.0f );
-	pVertices[nIndex].v2UV = XMFLOAT2( 0.5f, 0.0f );
-	nIndex++;
-	*pVertexNum = nIndex;
-
-	// インデックスデータ作成
-	nIndex = 0;
-	for ( i = 0; i < CORNER_NUM; i++ ) {
-		pIndices[nIndex    ] = nIndexOffset + 0;
-		pIndices[nIndex + 1] = nIndexOffset + i + 1 + 1;
-		pIndices[nIndex + 2] = nIndexOffset + i + 1;
-		nIndex += 3;
-		pIndices[nIndex    ] = nIndexOffset + CORNER_NUM + 2;
-		pIndices[nIndex + 1] = nIndexOffset + i + 1;
-		pIndices[nIndex + 2] = nIndexOffset + i + 1 + 1;
-		nIndex += 3;
-	}
-	*pIndexNum = nIndex;
 
 	return 0;
 }
@@ -299,7 +199,7 @@ D3D_FEATURE_LEVEL       g_FeatureLevel;			// フィーチャーレベル
 
 ID3D11Buffer			*g_pVertexBuffer;		// 頂点バッファ
 ID3D11Buffer			*g_pIndexBuffer;		// インデックスバッファ
-ID3D11BlendState		*g_pbsAddBlend;			// 加算ブレンド
+ID3D11BlendState		*g_pbsAlphaBlend;			// αブレンド
 ID3D11VertexShader		*g_pVertexShader;		// 頂点シェーダ
 ID3D11PixelShader		*g_pPixelShader;		// ピクセルシェーダ
 ID3D11InputLayout		*g_pInputLayout;		// シェーダ入力レイアウト
@@ -314,8 +214,9 @@ int							g_nVertexNum = 0;
 WORD		g_wIndices[MAX_BUFFER_INDEX];
 int							g_nIndexNum = 0;
 
-TEX_PICTURE				g_tSphere1Texture, g_tSphere2Texture;
-MY_MODEL					g_mmPlayer,  g_mmGround;
+TEX_PICTURE				g_tGroundTexture, g_tBillboardTexture;
+MY_MODEL					g_mmBillboard;
+MY_MODEL					g_mmGround;
 //MY_MODEL					g_mmTriangles[CHECK_TRIANGLE_NUM];
 
 
@@ -528,15 +429,15 @@ HRESULT MakeShaders( void )
     dwShaderFlags |= D3DCOMPILE_DEBUG;
 #endif
     // コンパイル
-    hr = D3DCompileFromFile( _T( "Basic_3D_TexMark.fx" ), nullptr, nullptr, "VS", "vs_4_0_level_9_1",
-								dwShaderFlags, 0, &pVertexShaderBuffer, &pError);
+    hr = D3DX11CompileFromFile( _T( "Basic_3D_TexMark.fx" ), nullptr, nullptr, "VS", "vs_4_0_level_9_1",
+								dwShaderFlags, 0, NULL, &pVertexShaderBuffer, &pError, NULL );
     if ( FAILED( hr ) ) {
 		MessageBox( NULL, _T( "Can't open Basic_3D_TexMark.fx" ), _T( "Error" ), MB_OK );
         SAFE_RELEASE( pError );
         return hr;
     }
-    hr = D3DCompileFromFile( _T( "Basic_3D_TexMark.fx" ), nullptr, nullptr, "PS", "ps_4_0_level_9_1",
-								dwShaderFlags, 0, &pPixelShaderBuffer, &pError);
+    hr = D3DX11CompileFromFile( _T( "Basic_3D_TexMark.fx" ), NULL, NULL, "PS", "ps_4_0_level_9_1",
+								dwShaderFlags, 0, NULL, &pPixelShaderBuffer, &pError, NULL );
     if ( FAILED( hr ) ) {
         SAFE_RELEASE( pVertexShaderBuffer );
         SAFE_RELEASE( pError );
@@ -599,18 +500,23 @@ HRESULT MakeShaders( void )
 int LoadTexture( TCHAR *szFileName, TEX_PICTURE *pTexPic, int nWidth, int nHeight,
 				 int nTexWidth, int nTexHeight )
 {
-	ID3D11Resource *resource = nullptr;
-	HRESULT						hr;
+    HRESULT						hr;
+	D3DX11_IMAGE_LOAD_INFO		liLoadInfo;
 	ID3D11Texture2D				*pTexture;
 
+	ZeroMemory( &liLoadInfo, sizeof( D3DX11_IMAGE_LOAD_INFO ) );
+	liLoadInfo.Width = nTexWidth;
+	liLoadInfo.Height = nTexHeight;
+	liLoadInfo.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+	liLoadInfo.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
 
-	hr = DirectX::CreateWICTextureFromFile(g_pd3dDevice, g_pImmediateContext, szFileName, &resource, &(pTexPic->pSRViewTexture));
-
-	if (FAILED(hr)) {
-		return hr;
-	}
-	pTexPic->pSRViewTexture->GetResource((ID3D11Resource **)&(pTexture));
-	pTexture->GetDesc(&(pTexPic->tdDesc));
+	hr = D3DX11CreateShaderResourceViewFromFile( g_pd3dDevice, szFileName, &liLoadInfo,
+												 NULL, &( pTexPic->pSRViewTexture ), NULL );
+    if ( FAILED( hr ) ) {
+        return hr;
+    }
+	pTexPic->pSRViewTexture->GetResource( ( ID3D11Resource ** )&( pTexture ) );
+	pTexture->GetDesc( &( pTexPic->tdDesc ) );
 	pTexture->Release();
 
 	pTexPic->nWidth = nWidth;
@@ -618,6 +524,7 @@ int LoadTexture( TCHAR *szFileName, TEX_PICTURE *pTexPic, int nWidth, int nHeigh
 
 	return S_OK;
 }
+
 
 // 描画モードオブジェクト初期化
 int InitDrawModes( void )
@@ -629,14 +536,14 @@ int InitDrawModes( void )
 	BlendDesc.AlphaToCoverageEnable = FALSE;
 	BlendDesc.IndependentBlendEnable = FALSE;
     BlendDesc.RenderTarget[0].BlendEnable           = TRUE;
-    BlendDesc.RenderTarget[0].SrcBlend              = D3D11_BLEND_ONE;
-    BlendDesc.RenderTarget[0].DestBlend             = D3D11_BLEND_ONE;
+    BlendDesc.RenderTarget[0].SrcBlend              = D3D11_BLEND_SRC_ALPHA;
+    BlendDesc.RenderTarget[0].DestBlend             = D3D11_BLEND_INV_SRC_ALPHA;
     BlendDesc.RenderTarget[0].BlendOp               = D3D11_BLEND_OP_ADD;
     BlendDesc.RenderTarget[0].SrcBlendAlpha         = D3D11_BLEND_ONE;
     BlendDesc.RenderTarget[0].DestBlendAlpha        = D3D11_BLEND_ZERO;
     BlendDesc.RenderTarget[0].BlendOpAlpha          = D3D11_BLEND_OP_ADD;
     BlendDesc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
-    hr = g_pd3dDevice->CreateBlendState( &BlendDesc, &g_pbsAddBlend );
+    hr = g_pd3dDevice->CreateBlendState( &BlendDesc, &g_pbsAlphaBlend );
     if ( FAILED( hr ) ) {
         return hr;
     }
@@ -662,6 +569,7 @@ int InitDrawModes( void )
 // ジオメトリの初期化
 HRESULT InitGeometry( void )
 {
+	int					i, j;
     HRESULT				hr = S_OK;
 
     // 頂点バッファ作成
@@ -694,66 +602,88 @@ HRESULT InitGeometry( void )
         return hr;
 
 	// テクスチャ作成
-	g_tSphere1Texture.pSRViewTexture =  NULL;
-	hr = LoadTexture( _T( "10.bmp" ), &g_tSphere1Texture, 691, 691, 1024, 1024 );
+	g_tGroundTexture.pSRViewTexture =  NULL;
+	hr = LoadTexture( _T( "Tri_Tex.bmp" ), &g_tGroundTexture, 64, 64, 64, 64 );
     if ( FAILED( hr ) ) {
- 		MessageBox( NULL, _T( "Can't open 10.bmp" ), _T( "Error" ), MB_OK );
+ 		MessageBox( NULL, _T( "Can't open Tri_Tex.bmp" ), _T( "Error" ), MB_OK );
        return hr;
     }
-	g_tSphere2Texture.pSRViewTexture =  NULL;
-	hr = LoadTexture( _T( "9.bmp" ), &g_tSphere2Texture, 222, 222, 256, 256 );
+	g_tBillboardTexture.pSRViewTexture =  NULL;
+	hr = LoadTexture( _T( "12.dds" ), &g_tBillboardTexture, 321, 339, 512, 512 );
     if ( FAILED( hr ) ) {
- 		MessageBox( NULL, _T( "Can't open 9.bmp" ), _T( "Error" ), MB_OK );
+ 		MessageBox( NULL, _T( "Can't open 12.dds" ), _T( "Error" ), MB_OK );
        return hr;
     }
 
 	// モデル作成
-	int						nVertexNum1, nIndexNum1;
-	int						nVertexNum2, nIndexNum2;
-	// プレイヤー
-	MakeSphereIndexed( 0.0f, 0.68f, 0.0f, 0.16f,
-					   &( g_cvVertices[g_nVertexNum] ), &nVertexNum1,
-					   &( g_wIndices[g_nIndexNum] ),    &nIndexNum1, 0 );
-	MakeConeIndexed( 0.5f, 0.2f,
-					 &( g_cvVertices[g_nVertexNum + nVertexNum1] ), &nVertexNum2,
-					 &( g_wIndices[g_nIndexNum + nIndexNum1] ),     &nIndexNum2,
-					 nVertexNum1 );
-	g_mmPlayer.nVertexPos = g_nVertexNum;
-	g_mmPlayer.nVertexNum = nVertexNum1 + nVertexNum2;
-	g_mmPlayer.nIndexPos = g_nIndexNum;
-	g_mmPlayer.nIndexNum = nIndexNum1 + nIndexNum2;
-	g_nVertexNum += nVertexNum1 + nVertexNum2;
-	g_nIndexNum += nIndexNum1 + nIndexNum2;
-	g_mmPlayer.ptpTexture = &g_tSphere2Texture;
-	g_mmPlayer.mMatrix = XMMatrixIdentity();
-	g_mmPlayer.v4AddColor = XMFLOAT4( 0.0f, 0.0f, 0.0f, 0.0f );
-
-	// 地面
-	float		dhx, dhy;
-	dhx = g_fHeights[1] - g_fHeights[0];
-	dhy = g_fHeights[2] - g_fHeights[0];
-	g_fHeights[3] = g_fHeights[0] + dhx + dhy;
-	g_cvVertices[g_nVertexNum   ].v4Pos = XMFLOAT4( -GROUND_SIZE / 2, g_fHeights[0], -GROUND_SIZE / 2, 1.0f );
-	g_cvVertices[g_nVertexNum   ].v2UV = XMFLOAT2( 0.0f, 1.0f );
-	g_cvVertices[g_nVertexNum + 1].v4Pos = XMFLOAT4(  GROUND_SIZE / 2, g_fHeights[1], -GROUND_SIZE / 2, 1.0f );
-	g_cvVertices[g_nVertexNum + 1].v2UV = XMFLOAT2( 1.0f, 1.0f );
-	g_cvVertices[g_nVertexNum + 2].v4Pos = XMFLOAT4( -GROUND_SIZE / 2, g_fHeights[2], GROUND_SIZE / 2, 1.0f );
-	g_cvVertices[g_nVertexNum + 2].v2UV = XMFLOAT2( 0.0f, 0.0f );
-	g_cvVertices[g_nVertexNum + 3].v4Pos = XMFLOAT4(  GROUND_SIZE / 2, g_fHeights[3], GROUND_SIZE / 2, 1.0f );
-	g_cvVertices[g_nVertexNum + 3].v2UV = XMFLOAT2( 1.0f, 0.0f );
+	// ビルボード
+	g_cvVertices[g_nVertexNum   ].v4Pos = XMFLOAT4( -BILLBOARD_SIZE / 2, BILLBOARD_SIZE, 0.0f, 1.0f );
+	g_cvVertices[g_nVertexNum   ].v2UV = XMFLOAT2( 0.0f, 0.0f );
+	g_cvVertices[g_nVertexNum + 1].v4Pos = XMFLOAT4(  BILLBOARD_SIZE / 2, BILLBOARD_SIZE, 0.0f, 1.0f );
+	g_cvVertices[g_nVertexNum + 1].v2UV = XMFLOAT2( 1.0f, 0.0f );
+	g_cvVertices[g_nVertexNum + 2].v4Pos = XMFLOAT4( -BILLBOARD_SIZE / 2, 0.0f, 0.0f, 1.0f );
+	g_cvVertices[g_nVertexNum + 2].v2UV = XMFLOAT2( 0.0f, 1.0f );
+	g_cvVertices[g_nVertexNum + 3].v4Pos = XMFLOAT4(  BILLBOARD_SIZE / 2, 0.0f, 0.0f, 1.0f );
+	g_cvVertices[g_nVertexNum + 3].v2UV = XMFLOAT2( 1.0f, 1.0f );
 	g_wIndices[g_nIndexNum   ] = 0;
-	g_wIndices[g_nIndexNum + 1] = 1;
-	g_wIndices[g_nIndexNum + 2] = 2;
-	g_wIndices[g_nIndexNum + 3] = 2;
-	g_wIndices[g_nIndexNum + 4] = 1;
+	g_wIndices[g_nIndexNum + 1] = 2;
+	g_wIndices[g_nIndexNum + 2] = 1;
+	g_wIndices[g_nIndexNum + 3] = 1;
+	g_wIndices[g_nIndexNum + 4] = 2;
 	g_wIndices[g_nIndexNum + 5] = 3;
-	g_mmGround.nVertexPos = g_nVertexNum;
-	g_mmGround.nVertexNum = 4;
-	g_mmGround.nIndexPos = g_nIndexNum;
-	g_mmGround.nIndexNum = 6;
+	g_mmBillboard.nVertexPos = g_nVertexNum;
+	g_mmBillboard.nVertexNum = 4;
+	g_mmBillboard.nIndexPos = g_nIndexNum;
+	g_mmBillboard.nIndexNum = 6;
 	g_nVertexNum += 4;
 	g_nIndexNum += 6;
-	g_mmGround.ptpTexture = &g_tSphere1Texture;
+	g_mmBillboard.ptpTexture = &g_tBillboardTexture;
+	g_mmBillboard.mMatrix = XMMatrixIdentity();
+	g_mmBillboard.v4AddColor = XMFLOAT4( 0.0f, 0.0f, 0.0f, 0.0f );
+
+	// 地面
+	int				nIndex;
+	int				nIndexZ1, nIndexZ2;
+	float			x, z;
+	float			u, v;
+	float			fHeight;
+	nIndex = 0;
+	z = -GROUND_SIZE / 2;
+	for ( i = 0; i < GROUND_DIVIDE_NUM + 1; i++ ) {
+		x = -GROUND_SIZE / 2;
+		v = ( float )i;
+		for ( j = 0; j < GROUND_DIVIDE_NUM + 1; j++ ) {
+			u = ( float )j;// / ( HEIGHT_NUM - 1 );
+			fHeight = GetGroundHeight( x, z );
+			g_cvVertices[g_nVertexNum + nIndex].v4Pos = XMFLOAT4( x, GROUND_BASE + fHeight, z, 1.0f );
+			g_cvVertices[g_nVertexNum + nIndex].v2UV = XMFLOAT2( u, v );
+			nIndex++;
+			x += BLOCK_WIDTH;
+		}
+		z += BLOCK_WIDTH;
+	}
+	g_mmGround.nVertexPos = g_nVertexNum;
+	g_mmGround.nVertexNum = nIndex;
+	g_nVertexNum += nIndex;
+
+	nIndex = 0;
+	for ( i = 0; i < GROUND_DIVIDE_NUM; i++ ) {
+		nIndexZ1 = i * ( GROUND_DIVIDE_NUM + 1 );
+		nIndexZ2 = ( i + 1 ) * ( GROUND_DIVIDE_NUM + 1 );
+		for ( j = 0; j < GROUND_DIVIDE_NUM; j++ ) {
+			g_wIndices[g_nIndexNum + nIndex    ] = nIndexZ1 + j;
+			g_wIndices[g_nIndexNum + nIndex + 1] = nIndexZ1 + j + 1;
+			g_wIndices[g_nIndexNum + nIndex + 2] = nIndexZ2 + j;
+			g_wIndices[g_nIndexNum + nIndex + 3] = nIndexZ1 + j + 1;
+			g_wIndices[g_nIndexNum + nIndex + 4] = nIndexZ2 + j + 1;
+			g_wIndices[g_nIndexNum + nIndex + 5] = nIndexZ2 + j;
+			nIndex += 6;
+		}
+	}
+	g_mmGround.nIndexPos = g_nIndexNum;
+	g_mmGround.nIndexNum = nIndex;
+	g_nIndexNum += nIndex;
+	g_mmGround.ptpTexture = &g_tGroundTexture;
 	g_mmGround.mMatrix = XMMatrixIdentity();
 	g_mmGround.v4AddColor = XMFLOAT4( 0.0f, 0.0f, 0.0f, 0.0f );
 
@@ -779,13 +709,13 @@ HRESULT InitGeometry( void )
 // 終了処理
 int Cleanup( void )
 {
-    SAFE_RELEASE( g_tSphere1Texture.pSRViewTexture );
-    SAFE_RELEASE( g_tSphere2Texture.pSRViewTexture );
+    SAFE_RELEASE( g_tGroundTexture.pSRViewTexture );
+    SAFE_RELEASE( g_tBillboardTexture.pSRViewTexture );
     SAFE_RELEASE( g_pVertexBuffer );
     SAFE_RELEASE( g_pIndexBuffer );
 
     SAFE_RELEASE( g_pSamplerState );
-    SAFE_RELEASE( g_pbsAddBlend );
+    SAFE_RELEASE( g_pbsAlphaBlend );
     SAFE_RELEASE( g_pInputLayout );
     SAFE_RELEASE( g_pPixelShader );
     SAFE_RELEASE( g_pVertexShader );
@@ -830,6 +760,27 @@ int DrawMyModel( MY_MODEL *pmmDrawModel, XMMATRIX *pmViewProjection )
 	g_pImmediateContext->UpdateSubresource( g_pCBNeverChanges, 0, NULL, &cbNeverChanges, 0, 0 );
 	g_pImmediateContext->PSSetShaderResources( 0, 1, &( pmmDrawModel->ptpTexture->pSRViewTexture ) );
 	g_pImmediateContext->DrawIndexed( pmmDrawModel->nIndexNum, pmmDrawModel->nIndexPos, pmmDrawModel->nVertexPos );
+
+	return 0;
+}
+
+
+// モデルの部分描画
+int DrawMyModelPartial( MY_MODEL *pmmDrawModel, XMMATRIX *pmViewProjection,
+						int nTrianglePos, int nTriangleNum )
+{
+    CBNeverChanges	cbNeverChanges;
+	int				nIndexPos, nIndexNum;
+
+	cbNeverChanges.mView = XMMatrixTranspose( pmmDrawModel->mMatrix * *pmViewProjection );
+	cbNeverChanges.v4AddColor = pmmDrawModel->v4AddColor;
+	g_pImmediateContext->UpdateSubresource( g_pCBNeverChanges, 0, NULL, &cbNeverChanges, 0, 0 );
+	g_pImmediateContext->PSSetShaderResources( 0, 1, &( pmmDrawModel->ptpTexture->pSRViewTexture ) );
+	nIndexPos = nTrianglePos * 3;
+	if ( nIndexPos > ( pmmDrawModel->nIndexNum - 3 ) ) nIndexPos = pmmDrawModel->nIndexNum - 3;
+	nIndexNum = nTriangleNum * 3;
+	if ( ( nIndexPos + nIndexNum ) > pmmDrawModel->nIndexNum ) nIndexNum = pmmDrawModel->nIndexNum - nIndexPos;
+	g_pImmediateContext->DrawIndexed( nIndexNum, pmmDrawModel->nIndexPos + nIndexPos, pmmDrawModel->nVertexPos );
 
 	return 0;
 }
@@ -883,8 +834,8 @@ HRESULT Render( void )
 	XMMATRIX		mViewProjection;
 
 	// Initialize the view matrix
-	XMVECTOR Eye = XMVectorSet( Player_1.v3Pos.x, Player_1.v3Pos.y + 3.0f, Player_1.v3Pos.z - 5.0f, 0.0f );
-	XMVECTOR At = XMVectorSet( Player_1.v3Pos.x, Player_1.v3Pos.y, Player_1.v3Pos.z, 0.0f );
+	XMVECTOR Eye = XMVectorSet( Player_1.v3Pos.x, Player_1.v3Pos.y, Player_1.v3Pos.z, 0.0f );
+	XMVECTOR At = XMVectorSet( 0.0f, 0.0f, 0.0f, 0.0f );
 	XMVECTOR Up = XMVectorSet( 0.0f, 1.0f, 0.0f, 0.0f );
 	mView = XMMatrixLookAtLH( Eye, At, Up );
 
@@ -899,12 +850,18 @@ HRESULT Render( void )
 
 	// 地面
     g_pImmediateContext->OMSetBlendState( NULL, NULL, 0xFFFFFFFF );
+	g_mmGround.v4AddColor = XMFLOAT4( 0.0f, 0.0f, 0.0f, 1.0f );
 	DrawMyModel( &g_mmGround, &mViewProjection );
 
-	// プレイヤー
-    g_pImmediateContext->OMSetBlendState( NULL, NULL, 0xFFFFFFFF );
-	g_mmPlayer.mMatrix = CreateWorldMatrix( Player_1.v3Pos.x, Player_1.v3Pos.y, Player_1.v3Pos.z, 1.0f );
-	DrawMyModel( &g_mmPlayer, &mViewProjection );
+	// ビルボード
+	int			i;
+	g_pImmediateContext->OMSetDepthStencilState( g_pDSDepthState_NoWrite, 1 );	// Zバッファへの書き込みなし
+    g_pImmediateContext->OMSetBlendState( g_pbsAlphaBlend, NULL, 0xFFFFFFFF );	// αブレンド
+	for ( i = 0; i < BILLBOARD_NUM; i++ ) {
+		g_mmBillboard.v4AddColor = XMFLOAT4( Billboards[i].fMarkBright, 0.0f, 0.0f, 0.0f );
+		g_mmBillboard.mMatrix = MakeBillboardMatrix( &mView, &( Billboards[i].v3Pos ) );	// ビルボード行列作成
+		DrawMyModel( &g_mmBillboard, &mViewProjection );
+	}
 
     return S_OK;
 }
@@ -922,7 +879,7 @@ int WINAPI _tWinMain( HINSTANCE hInst, HINSTANCE, LPTSTR, int )
 
 	HRESULT hr = CoInitializeEx(NULL,
 		COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
-	
+
 	// Register the window class
     WNDCLASSEX wc = { sizeof( WNDCLASSEX ), CS_CLASSDC, MsgProc, 0L, 0L,
                       GetModuleHandle( NULL ), NULL, NULL, NULL, NULL,
@@ -932,7 +889,7 @@ int WINAPI _tWinMain( HINSTANCE hInst, HINSTANCE, LPTSTR, int )
 	RECT rcRect;
 	SetRect( &rcRect, 0, 0, g_nClientWidth, g_nClientHeight );
 	AdjustWindowRect( &rcRect, WS_OVERLAPPEDWINDOW, FALSE );
-    g_hWnd = CreateWindow( _T( "D3D Sample" ), _T( "3DCheckHit_4_2" ),
+    g_hWnd = CreateWindow( _T( "D3D Sample" ), _T( "BillBoard_3_1" ),
 						   WS_OVERLAPPEDWINDOW, 100, 20, rcRect.right - rcRect.left, rcRect.bottom - rcRect.top,
 						   GetDesktopWindow(), NULL, wc.hInstance, NULL );
 
@@ -944,6 +901,7 @@ int WINAPI _tWinMain( HINSTANCE hInst, HINSTANCE, LPTSTR, int )
         {
 			if ( SUCCEEDED( InitGeometry() ) ) {					// ジオメトリ作成
 				
+				InitBillboard();									// ビルボードの初期化
 				InitPlayer();										// プレイヤーの初期化
 				// Show the window
 				ShowWindow( g_hWnd, SW_SHOWDEFAULT );

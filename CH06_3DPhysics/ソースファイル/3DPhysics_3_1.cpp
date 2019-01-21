@@ -163,7 +163,7 @@ int MovePlayer( void )
 	Player_1.v3Vel.z += GR * v3Drop.z;
 	// 加速度計算コードを書いてください(P285を参考に)
 	//Player_1.v3Vel.x = GR * (Player_1.v3Vel.x*GR);
-	//Player_1.v3Vel.y = GR * (-Player_1.v3Vel.y*GR);
+	Player_1.v3Vel.y = GR * (-Player_1.v3Vel.y*GR);
 	//Player_1.v3Vel.z = GR * (-Player_1.v3Vel.y*GR);
 	//v3Up;
 	// 速度直交化補正を書いてください(P295を参考に)
