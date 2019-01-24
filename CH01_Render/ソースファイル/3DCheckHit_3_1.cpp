@@ -8,8 +8,8 @@
 #include <D3Dcompiler.h>
 #include <DirectXMath.h>
 #include<d3d11shader.h>
-#include<DirectXTex\DirectXTex.h>
-#include<WICTextureLoader\WICTextureLoader.h>
+#include<DirectXTex.h>
+#include<../WICTextureLoader\WICTextureLoader.h>
 
 #define VIEW_WIDTH					800					// 画面幅
 #define VIEW_HEIGHT					600					// 画面高さ
@@ -21,7 +21,7 @@
 #define GROUND_SIZE					20.0f				// 床のサイズ
 #define CHECK_POLYGON_ANGLES		30					// 当たり判定多角形の角数
 
-Using namespace DirectX12
+using namespace DirectX;
 
 // 頂点構造体
 struct CUSTOMVERTEX {
@@ -291,7 +291,7 @@ int MakeConeIndexed( float fHeight, float r,
 // リンクライブラリ
 #pragma comment( lib, "d3d11.lib" )   // D3D11ライブラリ
 #pragma comment( lib, "d3dcompiler.lib" )
-#pragma comment( lib, "DirectXTex.lib" )
+#pragma comment( lib, "C:/Users/1601291/Desktop/DirectXTex-master/DirectXTex/Bin/Desktop_2017_Win10/x64/Debug/DirectXTex.lib" )
 #pragma comment( lib, "winmm.lib" )
 
 

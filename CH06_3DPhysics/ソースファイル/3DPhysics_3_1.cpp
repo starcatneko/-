@@ -9,8 +9,8 @@
 #include <D3Dcompiler.h>
 #include <DirectXMath.h>
 #include<d3d11shader.h>
-#include<DirectXTex\DirectXTex.h>
-#include<WICTextureLoader\WICTextureLoader.h>
+#include<DirectTexMaster\DirectXTex.h>
+#include<C:\Users\1601291\Desktop\DirectXTex-master\WICTextureLoader\WICTextureLoader.h>
 
 #define VIEW_WIDTH					800					// 画面幅
 #define VIEW_HEIGHT					600					// 画面高さ
@@ -431,7 +431,7 @@ int Make3DRectangleIndexed( float fWidth, float fHeight, float fDepth, int bCent
 // リンクライブラリ
 #pragma comment( lib, "d3d11.lib" )   // D3D11ライブラリ
 #pragma comment( lib, "d3dcompiler.lib" )
-#pragma comment( lib, "DirectXTex.lib" )
+//#pragma comment( lib, "DirectXTex.lib" )
 #pragma comment( lib, "winmm.lib" )
 
 
