@@ -319,7 +319,7 @@ int MakeConeIndexed( float fHeight, float r,
 // リンクライブラリ
 #pragma comment( lib, "d3d11.lib" )   // D3D11ライブラリ
 #pragma comment( lib, "d3dcompiler.lib" )
-#pragma comment( lib, "DirectXTex.lib" )
+#pragma comment( lib, "C:/Users/1601291/Desktop/DirectXTex-master/DirectXTex/Bin/Desktop_2017_Win10/x64/Debug/DirectXTex.lib" )
 #pragma comment( lib, "winmm.lib" )
 
 // セーフリリースマクロ
@@ -1047,8 +1047,6 @@ int WINAPI _tWinMain( HINSTANCE hInst, HINSTANCE, LPTSTR, int )
     g_nClientWidth  = VIEW_WIDTH;						// 幅
     g_nClientHeight = VIEW_HEIGHT;						// 高さ
 
-	HRESULT hr = CoInitializeEx(NULL, 
-		COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
 	// Register the window class
     WNDCLASSEX wc = { sizeof( WNDCLASSEX ), CS_CLASSDC, MsgProc, 0L, 0L,
                       GetModuleHandle( NULL ), NULL, NULL, NULL, NULL,

@@ -1,4 +1,4 @@
-﻿  3DCheckHit_1_2.cpp
-c:\users\1601291\documents\github\-\ch01_render\ソースファイル\3dcheckhit_1_2.cpp(1083): warning C4101: 'cbNeverChanges': ローカル変数は 1 度も使われていません。
-c:\users\1601291\documents\github\-\ch01_render\ソースファイル\3dcheckhit_1_2.cpp(1084): warning C4101: 'mWorld': ローカル変数は 1 度も使われていません。
+﻿  3DCheckHit_3_1.cpp
+c:\users\1601291\documents\github\-\ch04_3dcheckhit\ソースファイル\ソースファイルver2.0更新版（最終）\3dcheckhit_3_1.cpp(1042): warning C4101: 'cbNeverChanges': ローカル変数は 1 度も使われていません。
+c:\users\1601291\documents\github\-\ch04_3dcheckhit\ソースファイル\ソースファイルver2.0更新版（最終）\3dcheckhit_3_1.cpp(1043): warning C4101: 'mWorld': ローカル変数は 1 度も使われていません。
   Math.vcxproj -> C:\Users\1601291\Documents\GitHub\-\CH01_Render\ソースファイル\Win10用\x64\Debug\Math.exe

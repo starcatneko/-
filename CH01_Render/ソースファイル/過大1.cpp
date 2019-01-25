@@ -821,7 +821,7 @@ HRESULT Render( void )
 	mProjection = XMMatrixPerspectiveFovLH( XM_PIDIV4, VIEW_WIDTH / ( FLOAT )VIEW_HEIGHT, 0.01f, 100.0f );
 
     // ï`âÊ
-//    g_pImmediateContext->OMSetBlendState( g_pbsAddBlend, NULL, 0xFFFFFFFF );
+	//g_pImmediateContext->OMSetBlendState( g_pbsAddBlend, NULL, 0xFFFFFFFF );
     g_pImmediateContext->OMSetBlendState( NULL, NULL, 0xFFFFFFFF );
 	g_pImmediateContext->OMSetDepthStencilState( g_pDSDepthState, 1 );
 	mWorld = CreateWorldMatrix( Sphere_1.v3Pos.x, Sphere_1.v3Pos.y, Sphere_1.v3Pos.z, Sphere_1.r );
@@ -831,7 +831,7 @@ HRESULT Render( void )
 	g_pImmediateContext->PSSetShaderResources( 0, 1, &( g_tSphere1Texture.pSRViewTexture ) );
 	g_pImmediateContext->DrawIndexed( g_nIndexNum, 0, 0 );
 
-    g_pImmediateContext->OMSetBlendState( g_pbsAddBlend, NULL, 0xFFFFFFFF );
+    //g_pImmediateContext->OMSetBlendState( g_pbsAddBlend, NULL, 0xFFFFFFFF );
 	g_pImmediateContext->OMSetDepthStencilState( g_pDSDepthState_NoWrite, 1 );
 //    g_pImmediateContext->OMSetBlendState( NULL, NULL, 0xFFFFFFFF );
 	mWorld = CreateWorldMatrix( Sphere_2.v3Pos.x, Sphere_2.v3Pos.y, Sphere_2.v3Pos.z, Sphere_2.r );
@@ -878,7 +878,7 @@ int WINAPI _tWinMain( HINSTANCE hInst, HINSTANCE, LPTSTR, int )
 	RECT rcRect;
 	SetRect( &rcRect, 0, 0, g_nClientWidth, g_nClientHeight );
 	AdjustWindowRect( &rcRect, WS_OVERLAPPEDWINDOW, FALSE );
-    g_hWnd = CreateWindow( _T( "D3D Sample" ), _T( "3DCheckHit_1_1" ),
+    g_hWnd = CreateWindow( _T( "D3D Sample" ), _T( "â€ëË1_1 1601291_êºâ™ñL" ),
 						   WS_OVERLAPPEDWINDOW, 100, 20, rcRect.right - rcRect.left, rcRect.bottom - rcRect.top,
 						   GetDesktopWindow(), NULL, wc.hInstance, NULL );
 
